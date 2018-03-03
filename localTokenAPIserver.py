@@ -3,6 +3,7 @@ https://blog.miguelgrinberg.com/post/restful-authentication-with-flask
 """
 ''' #!/usr/bin/env python '''
 import os
+import random
 from flask import Flask, abort, request, jsonify, g, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
@@ -70,13 +71,13 @@ def new_user():
     password = request.json.get('password')
     if username is None or password is None:
         abort(400)    # missing arguments
-    if User.query.filter_by(username=username).first() is not None:
-        abort(400)    # existing user
+    if User.query.filter_by(username=username).first() is not None:        
+        return (jsonify({'username': user.username, 'status': 'already_exists'}))
     user = User(username=username)
     user.hash_password(password)
     db.session.add(user)
     db.session.commit()
-    return (jsonify({'username': user.username}), 201,
+    return (jsonify({'username': user.username}), 202,
             {'Location': url_for('get_user', id=user.id, _external=True)})
 
 
@@ -95,10 +96,12 @@ def get_auth_token():
     return jsonify({'token': token.decode('ascii'), 'duration': 600})
 
 
-@app.route('/api/resource', methods=['GET'])
+@app.route('/api/test/getCount', methods=['GET'])
 @auth.login_required
-def get_resource():
-    return jsonify({'data': 'Hello, %s!' % g.user.username})
+def get_count():
+    #return jsonify({'data': 'Hello, %s!' % g.user.username})
+    return jsonify({'count': random.randint(0,5)})
+    #return {"Number of Nodes" : random.randint(0,5)}
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
@@ -106,7 +109,7 @@ def shutdown_server():
         raise RuntimeError('Not running with the Werkzeug Server')
     func()
 
-@app.route('/shutdown', methods=['POST'])
+@app.route('/api/shutdown', methods=['POST'])
 def shutdown():
     shutdown_server()
     return 'Server shutting down...'
@@ -115,4 +118,4 @@ def shutdown():
 if __name__ == '__main__':
     if not os.path.exists('db.sqlite'):
         db.create_all()
-app.run(debug=True)
+    app.run(debug=True)
