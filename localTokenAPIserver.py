@@ -1,7 +1,4 @@
-"""
-https://blog.miguelgrinberg.com/post/restful-authentication-with-flask
-"""
-''' #!/usr/bin/env python '''
+#!/usr/bin/env python
 import os
 import random
 from flask import Flask, abort, request, jsonify, g, url_for
@@ -101,10 +98,22 @@ def get_auth_token():
 @app.route('/api/test/getCount', methods=['GET'])
 @auth.login_required
 def get_count():
-    #return jsonify({'data': 'Hello, %s!' % g.user.username})
-    return jsonify({'count': random.randint(0,3)})
+    """
+    simulates API call by returning server_count or error message
+    Expects Nothing
+    Returns jsonified server_count or error message
+    """
+    return_response = random.choice([{'count':random.randint(0,3)},
+                                     { 'errorCode': 99,
+                                       'errorMessage': "API server error" }])
+    return jsonify(return_response)
 
 def shutdown_server():
+    """
+    shutdown server call 
+    Expects nothing
+    Returns nothing
+    """
     func = request.environ.get('werkzeug.server.shutdown')
     if func is None:
         raise RuntimeError('Not running with the Werkzeug Server')
