@@ -35,7 +35,8 @@ class User(db.Model):
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
 
-    def generate_auth_token(self, expiration=600):
+    #def generate_auth_token(self, expiration=600):
+    def generate_auth_token(self, expiration=None): #Dont expire token to test client code
         s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.id})
 
@@ -93,15 +94,15 @@ def get_user(id):
 @auth.login_required
 def get_auth_token():
     token = g.user.generate_auth_token(600)
-    return jsonify({'token': token.decode('ascii'), 'duration': 600})
+    #return jsonify({'token': token.decode('ascii'), 'duration': 600})
+    return jsonify({'token': token.decode('ascii'), 'duration': None})
 
 
 @app.route('/api/test/getCount', methods=['GET'])
 @auth.login_required
 def get_count():
     #return jsonify({'data': 'Hello, %s!' % g.user.username})
-    return jsonify({'count': random.randint(0,5)})
-    #return {"Number of Nodes" : random.randint(0,5)}
+    return jsonify({'count': random.randint(0,3)})
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
