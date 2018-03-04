@@ -4,8 +4,6 @@ If value is non-zero corresponding number of instances are started
 If value is zero, all instances are stopped
 """
 
-
-
 def stop_instance(stop_id):
     """
     Stop a given instance
@@ -13,7 +11,7 @@ def stop_instance(stop_id):
     Returns response after attempt to stop given instance
     """
     instance_to_stop = ec2.Instance(stop_id)
-    print "stopping running instance {}".format(stop_id)
+    logging.info("stopping running instance {}".format(stop_id))
     stop_response = instance_to_stop.stop()
     return stop_response
 
@@ -24,7 +22,7 @@ def start_instance(start_id):
     Returns response after attempt to start given instance
     """
     instance_to_start = ec2.Instance(start_id)
-    print "starting stopped instance {}".format(start_id)
+    logging.info("starting stopped instance {}".format(start_id))
     start_response = instance_to_start.start()
     return start_response
 
@@ -32,13 +30,13 @@ def get_count(url, token):
     '''
     Get server count from api data
     Expects API url and valid token
-    Returns server_count on sucess, exit end script on error 
+    Returns server_count on sucess, exit & end script on error 
     '''
     api_call_response = get_api_data(url, token)
     if api_call_response.status_code == 200:
         if 'errorCode' in api_call_response.json():
-            print "API server responded with error"
-            print api_call_response.json()
+            logging.error("API server responded with error")
+            logging.error( api_call_response.json())
             sys.exit(1)
         elif 'count' in api_call_response.json():
             return api_call_response.json()['count']        
@@ -55,23 +53,23 @@ def get_api_data(url, token):
     try:
         server_response = requests.get(url, auth=(token, 'unused'))
     except:  #takes care of API server inaccessible exception.
-        print "Error, Could not access url {}".format(server_url)
-        print "URL may be inaccessible or token may have expired"
-        print "",format(sys.exc_info()[0])
+        logging.error("Error, Could not access url {}".format(server_url))
+        logging.error("URL may be inaccessible or token may have expired")
+        logging.error(sys.exc_info()[0])
         #raise SystemExit
         sys.exit(1)
     return server_response
 
       
 def main():
-    """ main function """
+    ''' main function '''
     try:
         API_VALUE = get_count(server_url, token)
-        print "Server count received from API server : {}".format(API_VALUE)
+        logging.info("Server count received from API server : {}".format(API_VALUE))
     except ValueError as v:
-        print "Error, Could not access url {} , using given token".format(server_url)
-        print "URL may be inaccessible or token may have expired"
-        print "Actual Error:", v
+        logging.error("Error, Could not access url {} , using given token".format(server_url))
+        logging.error("URL may be inaccessible or token may have expired")
+        logging.error(v)
         return
 
     #Collect status of exisitng EC2 instances info in a list of dicts
@@ -88,9 +86,10 @@ def main():
             tempdict['instance_type'] = instance.instance_type
             instance_status.append(tempdict)
 
-    #print available instances and their status
-    print "Available instances"
-    for i in instance_status: print i
+    #display available instances and their status
+    logging.info("Available instances")
+    for i in instance_status:
+        logging.info(i)
 
     #Logic to manipulate EC2 instances based on  API_VALUE
     #API_VALUE 0, Stop all instances
@@ -100,11 +99,11 @@ def main():
                                 for i in instance_status if i['instance_state'] == 'running']
         if running_instance_ids:
             for idx, instance_id in enumerate(running_instance_ids):
-                print "Stopping instances {} out of {}".format(idx+1, len(running_instance_ids))
+                logging.info("Stopping instances {} out of {}".format(idx+1, len(running_instance_ids)))
                 response = stop_instance(instance_id)
-                print response
+                logging.info(response)
         else:
-            print "All instances for given tag are already in 'stopped' status"
+            logging.info("All instances for given tag are already in 'stopped' status")
 
     #API_VALUE non_zero, start desired instances only if instances available to start
     if API_VALUE != 0:        
@@ -115,16 +114,16 @@ def main():
         if  stopped_instance_ids:
             #Throw warning if instances available to start are less than desired
             if len(stopped_instance_ids) < API_VALUE:
-                print "Desired instances to start ({}) < available ({})".format(API_VALUE, len(stopped_instance_ids))
-                print "You may want to add more instance to the setup"
-                print "As script will start only available instances"
+                logging.info("Desired instances to start ({}) < available ({})".format(API_VALUE, len(stopped_instance_ids)))
+                logging.info("You may want to add more instance to the setup")
+                logging.info("As script will start only available instances")
             
             for count, instance_id in zip(range(API_VALUE), stopped_instance_ids):
-                print "Starting instances {} out of {}".format(count+1, len(stopped_instance_ids))
+                logging.info("Starting instances {} out of {}".format(count+1, len(stopped_instance_ids)))
                 response = start_instance(instance_id)
-                print response
+                logging.info(response)
         else:
-            print "No instances available to start"
+            logging.info("All available instances already in 'running' state")
     return 0
                     
 if __name__ == "__main__":    
@@ -134,8 +133,7 @@ if __name__ == "__main__":
     import logging
 
     #Setup logging
-    logger.setLevel(logging.DEBUG)
-    #fh = logging.FileHandler('startStopInstancesViaAPI.log')
+    logging.basicConfig(level=logging.INFO)
     
     #User defined constants
     TAG_KEY = 'testServerType'
@@ -145,8 +143,8 @@ if __name__ == "__main__":
     #API_VALUE = 0
 
     #Using static token to test client side code
-    token = "eyJhbGciOiJIUzI1NiIsImV4cCI6MTUyMDE5MTEzMiwiaWF0IjoxNTIwMTkwNTMyfQ.eyJpZCI6NX0.GbhVX38qpjdfxNQd0CIE5aGH0p53LyCAsrJBbK9AqoQ"
-    server_url = 'http://127.0.0.1:5000/api/test/getCount'
+    token = "eyJhbGciOiJIUzI1NiIsImV4cCI6MTUyMDE5NDg4OSwiaWF0IjoxNTIwMTk0Mjg5fQ.eyJpZCI6NX0.iB5Q9oV5w5h-jRgrcPmMm7ivp82uEXf5Ynk7CBQ7U9c"
+    server_url = "http://127.0.0.1:5000/api/test/getCount"
     
     #Connect to EC2 using BOTO3
     ec2 = boto3.resource(ENV_TYPE, region_name=REGION)

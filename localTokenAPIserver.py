@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 import os
 import random
+import logging
 from flask import Flask, abort, request, jsonify, g, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
+
+#Setup logging
+logging.basicConfig(level=logging.INFO)
+
 
 # initialization
 app = Flask(__name__)
@@ -116,13 +121,13 @@ def shutdown_server():
     """
     func = request.environ.get('werkzeug.server.shutdown')
     if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
+        raise RuntimeError(logging.error('Not running with the Werkzeug Server'))
     func()
 
 @app.route('/api/shutdown', methods=['POST'])
 def shutdown():
     shutdown_server()
-    return 'Server shutting down...'
+    return logging.info('Server shutting down...')
 
 
 if __name__ == '__main__':
