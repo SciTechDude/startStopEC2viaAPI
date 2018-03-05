@@ -1,3 +1,9 @@
+"""
+Flask based secured API server that serves at http://127.0.0.1:5000
+User login:password stored in sql.db
+On demand token generated for each user with limited validity
+"""
+
 #!/usr/bin/env python
 import os
 import random
@@ -26,24 +32,28 @@ auth = HTTPBasicAuth()
 
 
 class User(db.Model):
+    ''' User DB model '''
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(64))
 
     def hash_password(self, password):
+        ''' Encrypt given password'''
         self.password_hash = pwd_context.encrypt(password)
 
     def verify_password(self, password):
+        ''' Verify given password'''
         return pwd_context.verify(password, self.password_hash)
 
-    #def generate_auth_token(self, expiration=600):
-    def generate_auth_token(self, expiration=None): #Dont expire token to test client code
+    def generate_auth_token(self, expiration=None):
+        ''' Generate token'''
         s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.id})
 
     @staticmethod
     def verify_auth_token(token):
+        ''' Verify token'''
         s = Serializer(app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -57,6 +67,11 @@ class User(db.Model):
 
 @auth.verify_password
 def verify_password(username_or_token, password):
+    """
+    Verify username password against DB value
+    Expects username or token with password
+    Returns True / False
+    """
     # first try to authenticate by token
     user = User.verify_auth_token(username_or_token)
     if not user:
@@ -70,12 +85,17 @@ def verify_password(username_or_token, password):
 
 @app.route('/api/users', methods=['POST'])
 def new_user():
+    """
+    Add new user to sql DB
+    Expects Nothing
+    Returns jsonified user details
+    """
     username = request.json.get('username')
     password = request.json.get('password')
     if username is None or password is None:
         abort(400)    # missing arguments
-    if User.query.filter_by(username=username).first() is not None:        
-        return (jsonify({'username': user.username, 'status': 'already_exists'}))
+    if User.query.filter_by(username=username).first() is not None:
+        return jsonify({'username': user.username, 'status': 'already_exists'})
     user = User(username=username)
     user.hash_password(password)
     db.session.add(user)
@@ -86,6 +106,11 @@ def new_user():
 
 @app.route('/api/users/<int:id>')
 def get_user(id):
+    """
+    Get user name
+    Expects Nothing
+    Returns Jsonified user name
+    """
     user = User.query.get(id)
     if not user:
         abort(400)
@@ -95,6 +120,11 @@ def get_user(id):
 @app.route('/api/token')
 @auth.login_required
 def get_auth_token():
+    """
+    Generates authorization token for a user
+    Expects nothing
+    Returns Jsonified token
+    """
     token = g.user.generate_auth_token(600)
     #return jsonify({'token': token.decode('ascii'), 'duration': 600})
     return jsonify({'token': token.decode('ascii'), 'duration': None})
@@ -108,14 +138,13 @@ def get_count():
     Expects Nothing
     Returns jsonified server_count or error message
     """
-    return_response = random.choice([{'count':random.randint(0,3)},
-                                     { 'errorCode': 99,
-                                       'errorMessage': "API server error" }])
+    return_response = random.choice([{'count':random.randint(0, 3)},
+                                     {'errorCode': 99, 'errorMessage': "API server error"}])
     return jsonify(return_response)
 
 def shutdown_server():
     """
-    shutdown server call 
+    shutdown server call
     Expects nothing
     Returns nothing
     """
@@ -126,6 +155,9 @@ def shutdown_server():
 
 @app.route('/api/shutdown', methods=['POST'])
 def shutdown():
+    """
+    shutdown API server
+    """
     shutdown_server()
     return logging.info('Server shutting down...')
 
