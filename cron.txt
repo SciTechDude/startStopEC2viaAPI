@@ -1,0 +1,2 @@
+#Start cron every two minutes
+2 00 * * * /usr/local/bin/python /<script_folder>/startStopInstancesViaAPI.py > /<log_folder>/output.log 2>&1

@@ -125,9 +125,9 @@ def get_auth_token():
     Expects nothing
     Returns Jsonified token
     """
-    token = g.user.generate_auth_token(600)
-    #return jsonify({'token': token.decode('ascii'), 'duration': 600})
-    return jsonify({'token': token.decode('ascii'), 'duration': None})
+    token_length = 1200
+    token = g.user.generate_auth_token(token_length)
+    return jsonify({'token': token.decode('ascii'), 'duration': token_length})
 
 
 @app.route('/api/test/getCount', methods=['GET'])
@@ -165,4 +165,4 @@ def shutdown():
 if __name__ == '__main__':
     if not os.path.exists('db.sqlite'):
         db.create_all()
-app.run(debug=True)
+app.run(host= '0.0.0.0', debug=True)

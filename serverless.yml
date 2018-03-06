@@ -1,0 +1,58 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: ec2-lambda-api
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: python2.7
+  region: us-east-2
+  profile: serverless-demo
+  memorySize: 128
+  vpc:    
+    securityGroupIds:
+      - sg-02f36969
+    subnetIds:
+      - subnet-6bb04c11
+      - subnet-2a67e242
+      - subnet-bf7b51f2
+
+
+  iamRoleStatements:
+   - Effect: "Allow"
+     Action:
+       - "ec2:*"
+     Resource: "*"
+  #you can define service wide environment variables here
+  environment:
+    TAG_KEY: "testServerType"
+    TAG_VALUE: "testWorker"
+    REGION: "us-east-2"
+    ENV_TYPE: "ec2"
+    SERVER_NAME: "ec2-52-14-55-216.us-east-2.compute.amazonaws.com"
+    PORT:  "5000"
+    API_LOC: "/api/test/getCount"
+    TOKEN: "eyJhbGciOiJIUzI1NiIsImV4cCI6MTUyMDMwMjk1NCwiaWF0IjoxNTIwMzAyMzU0fQ.eyJpZCI6NH0.nGqc76NU8nZ21l4oKgmkEdhFWSX0GDJ6SfyuA_XmF6g"
+
+
+functions:
+  get-count:
+    handler: handler.main
+    timeout: 90
+    events: 
+      - schedule: rate(02 minutes) # run every 02 minutes 
+
